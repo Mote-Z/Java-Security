@@ -1,4 +1,7 @@
+
+
 # springframework.security.oauth
+
 ## 0x00 前言
 
 存在问题的依赖包
@@ -157,7 +160,7 @@ DEFAULT CHARACTER SET = utf8;
     }
 ```
 
-
+![1565796920605](README.assets/1565796920605.png)
 
 修改数据库的配置信息（修改源代码中的`application.properties`中的数据库的用户名和密码参数为本机的数据库和密码的参数。）：
 
@@ -197,7 +200,7 @@ http://localhost:8080/oauth/authorize?client_id=client&response_type=code&redire
 ${T(java.lang.Runtime).getRuntime().exec("calc.exe")}
 ```
 
-
+![1565796934083](README.assets/1565796934083.png)
 
 
 
@@ -226,6 +229,78 @@ ${T(java.lang.Runtime).getRuntime().exec("calc.exe")}
 ```
 scope: The scope to which the client is limited. If scope is undefined or empty (the default) the client is not limited by scope.
 ```
+
+
+
+跟到SpelView类里的render函数，
+
+![1565885285912](README.assets/1565885285912.png)
+
+然后新建了一个PropertyPlaceholderHelper类，调用该类的replacePlaceholders函数，传入经过初步处理的template值maskedTemplate
+
+![1565885435174](README.assets/1565885435174.png)
+
+跟进PropertyPlaceholderHelper.replacePlaceholders
+
+![1565885572544](README.assets/1565885572544.png)
+
+调用了该类的parseStringValue函数，参数为(value, placeholderResolver, new HashSet())
+
+其中payload在value里，palceholderResolver是SpelView类对象
+
+在parseStringValue函数会对value的值进行解析
+
+![1565885774293](README.assets/1565885774293.png)
+
+
+
+
+
+跟到了SpelView类的构造函数中
+
+![1565885914035](README.assets/1565885914035.png)
+
+调用expression类的getValue函数
+
+![1565886453285](README.assets/1565886453285.png)
+
+然后调用ast.getValue
+
+![1565887412426](README.assets/1565887412426.png)
+
+![1565887260102](README.assets/1565887260102.png)
+
+然后调用CompoundExpression类的getValueInternal方法
+
+![1565887472323](README.assets/1565887472323.png)
+
+然后调用同一个类里的getValueRef方法
+
+![1565887547144](README.assets/1565887547144.png)
+
+然后调用TypeReference类的getValueInternal方法
+
+![1565887657145](README.assets/1565887657145.png)
+
+然后就调用了
+
+![1565887761412](README.assets/1565887761412.png)
+
+经过一番处理替换之后得到value值
+
+![1565887797902](README.assets/1565887797902.png)
+
+
+
+最后跟到了MethodReference类里的getValueInternal方法，最终在该方法里的execute函数触发payload
+
+![1565887871639](README.assets/1565887871639.png)
+
+
+
+![1565887982785](README.assets/1565887982785.png)
+
+
 
 
 
