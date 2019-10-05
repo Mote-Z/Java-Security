@@ -2,7 +2,9 @@
 
 
 
+## 0x00 启动docker
 
+使用docker-compose
 
 
 ```
@@ -32,4 +34,42 @@ networks:
 
 
 
-www下只需要放入war包，启动后，tomcat会自动解压
+![1570275819326](README.assets/1570275819326.png)
+
+
+
+www目录下只需要放入war包，启动后，tomcat会自动解压，因为使用volumes，所以可以看到解压后的文件夹
+
+
+
+## 0x01 设置IDEA
+
+
+
+用IDEA打开www下的jenkins目录，run->Edit Configurations
+
+![1570275896470](README.assets/1570275896470.png)
+
+一般默认
+
+
+
+
+
+## 0x02 添加依赖解压核心jar包
+
+在WEB-INF/lib/下
+
+```
+jenkins-core-2.138.4.jar
+jenkins-stapler-support-1.0.jar
+stapler-1.256.jar
+```
+
+右键点击add as libraries，就可以看到源码了
+
+下断，开始愉快的调试
+
+
+
+入口一般在stapler.class的service方法
