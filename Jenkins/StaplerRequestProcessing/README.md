@@ -128,6 +128,8 @@ getMetaClass方法是获取到根节点对象的所有 Dispatcher
 /fooBar/test/ => node.getFooBar(test)
 ```
 
+![1570464415557](README.assets/1570464415557.png)
+
 一直调用到getsecurityRealm()
 
 ![1570438150510](README.assets/1570438150510.png)
@@ -165,3 +167,5 @@ getMetaClass方法是获取到根节点对象的所有 Dispatcher
 这样便实现了动态路由解析。
 
 如此便明白了这里是存在着任意方法调用的问题的，即使前面看到了有对读权限的检测也可以绕过，如果把这些点串起来就能够形成一个完整的利用链。
+
+请看CVE2018-100861分析
