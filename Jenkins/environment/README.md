@@ -73,3 +73,17 @@ stapler-1.256.jar
 
 
 入口一般在stapler.class的service方法
+
+
+
+
+
+
+
+
+
+## 0x03 Jenkins的插件保存与迁移
+
+使用tomcat部署的话，在/root/.jenkins/plugins下有插件，拷贝替换
+
+然后安装时跳过，直接注册，以后就可以使用了
