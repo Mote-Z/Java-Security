@@ -11,7 +11,49 @@
 
 ## 原理分析
 
-留坑！
+ shiro默认使用了CookieRememberMeManager，其处理cookie的流程是：得到rememberMe的cookie值-->Base64解码-->AES解密-->反序列化。然而AES的密钥是硬编码的，就导致了攻击者可以构造恶意数据造成反序列化的RCE漏洞。 
+
+
+
+**getRememberedSerializedIdentity : 187,  CookieRememberMeManager (org.apache.shiro.web.mgt)**
+
+首先从http请求中获取cookie，如果cookie值不等于"deleteMe"
+
+![1571976379851](README.assets/1571976379851.png)
+
+调用ensurePadding来对取得的cookie填充`=`号
+
+![1571976497410](README.assets/1571976497410.png)
+
+调用base64解码，返回一个bytes数组
+
+![1571976629868](README.assets/1571976629868.png)
+
+**getRememberedPrincipals:393, AbstractRememberMeManager (org.apache.shiro.mgt)**
+
+
+
+![1571976825970](README.assets/1571976825970.png)
+
+
+
+调用convertBytesToPrincipals进行解密和反序列化
+
+![1571976694595](README.assets/1571976694595.png)
+
+
+
+![1571976963328](README.assets/1571976963328.png)
+
+
+
+跟进decrypt函数，可以知道iv是encrypted的前16bytes，key是在AbstractRememberMeManager中定义的默认KEY，可以自己修改，大部分情况都是默认
+
+![1571978373346](README.assets/1571978373346.png)
+
+最后把解密的数据给desirialize进行反序列化，反序列化的过程中调用了readObject
+
+![1571978670426](README.assets/1571978670426.png)
 
 
 
@@ -303,3 +345,7 @@ ln -s /bin/bash /bin/sh
 实际情况中会遇到很多入口与出口不同的情况，即我们向主机A发送payload，但是主机B执行了我们的ping命令。这时我们dns日志中的IP与A的IP无法匹配，就会造成漏报。 
 
 解决方案：为每次验证生成独立、随机的域名，如`[random].shiro.xxx.com`，在`[random]`处使用10位随机字符或者递增的数字。这样只要以该域名为准查找日志，即可同时匹配到入口和出口主机IP。
+
+
+
+需要主义服务器上的依赖版本选择不同的Conmoncollecctions

