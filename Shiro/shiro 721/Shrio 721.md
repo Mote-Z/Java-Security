@@ -427,6 +427,14 @@ if __name__ == '__main__':
 
 
 
+## 修复方式
+
+ https://github.com/apache/shiro/compare/master...1.4.x 
+
+更换CBC为GCM
+
+
+
 ## References
 
 1.  https://blog.skullsecurity.org/2016/going-the-other-way-with-padding-oracles-encrypting-arbitrary-data
