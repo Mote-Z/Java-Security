@@ -15,8 +15,5 @@ services:
     command: ["catalina.sh", "jpda", "run"]
     networks:
       - default
-
-  # 需要nginx、mysql、redis、activemq配置都可以在这里加上
-
 networks:
   default:

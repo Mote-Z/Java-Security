@@ -4,7 +4,7 @@
 
 [TOC]
 
-## 前言
+## 一：前言
 
 前不久刚分析完Shiro 550的漏洞，后面@wh1t3Pig告诉我Shiro十月份又出了一个安全公告，等级是Critical
 
@@ -29,7 +29,7 @@
 
 
 
-## 环境搭建
+## 二：环境搭建
 
 ### 制作war包
 
@@ -50,7 +50,7 @@ mvn package
 
 
 
-## rememberMe解密过程
+## 三：rememberMe解密过程
 
 > 首先，这个漏洞是针对rememberMe的，所以要对rememberMe的解密流程有所了解，这里用了IDEA+docker来进行远程Debug（什么？为什么不说加密？emmm，我当然不会说我想偷懒，而且了解这个过程只是为了我编写exp有一丢丢帮助）
 
@@ -239,7 +239,7 @@ ois.close();
 
 
 
-## padding oracle
+## 四：padding oracle
 
 笔者很久以前写过一篇文章分析CBC翻转攻击，现在好像找不到了（写的太菜），如果有了解过CBC翻转流程的话，对padding oracle应该也会理解的挺快。
 
@@ -352,7 +352,7 @@ Ciphertext=00000000000000006161616161616161
 
 
 
-## Shiro中的Oracle
+## 五：Shiro中的Oracle
 
 如果发送的rememberMe可以正确解析
 
@@ -421,13 +421,13 @@ if __name__ == '__main__':
 
 
 
-## 总结
+## 六：总结
 
 这个漏洞比较鸡肋的地方就是需要获取合法用户的rememberMe，如果配合XSS之类的也许效果更加，并且在利用时Shiro采用的是Collection3.2.1需要搭配相应的paylaod。
 
 
 
-## 修复方式
+## 七：修复方式
 
  https://github.com/apache/shiro/compare/master...1.4.x 
 
@@ -435,7 +435,7 @@ if __name__ == '__main__':
 
 
 
-## References
+## 八：References
 
 1.  https://blog.skullsecurity.org/2016/going-the-other-way-with-padding-oracles-encrypting-arbitrary-data
 2.  https://www.anquanke.com/post/id/192819 
