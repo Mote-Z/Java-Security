@@ -4,14 +4,6 @@
 
 
 
-Java里有许多许多定义需要区分，比如接口和协议，只是简单区分的话
-
-协议是指双方实体完成通信或服务所遵循的规则和约定。
-
-也就是“水平的”
-
-接口是
-
 
 
 ## 0x01 RPC（Remote Procedure Call）
@@ -98,7 +90,7 @@ Java RMI（Java Remote Method Invocation）Java 远程方法调用，是Java中�
 - **RMI Registry：**注册表，提供命名服务（naming service），提供remote object注册，name到remote object的绑定和查询
 - **RMI Server：**创建java.rmi.remote的子类，并将其注册到RMI Registry
 
-（RMI Registry和RMI Server通常处于同一台服务器，运行在不同端口，但是事实上是可以分开的）
+（RMI Registry和RMI Server通常处于同一台服务器，运行在不同端口，但是事实上是可以分开的，出于安全原因，应用程序只能绑定或取消绑定到在同一主机上运行的注册中心。这样可以防止客户端删除或覆盖服务器的远程注册表中的条目。但是，查找操作是任意主机都可以进行的。）
 
 RMI Registry 默认运行在 1099 端口上
 
@@ -207,13 +199,11 @@ RMI URL `rmi://hostname:port/remoteObjectName`
 > SingleOpProtoco     0x4c
 > MultiplexProtoco     0x4d
 
-​	对于SingleOpProtocol，单连接协议，无法进行超出单个请求和相应的交互
+- 对于SingleOpProtocol，单连接协议，无法进行超出单个请求和相应的交互
 
-​	对于StreamProtocol 和 MultiplexProtocol ，Server必须以字节0x4e响应，以确认对协议的支持以及EndpointIdentifier（包含客户端的主机名以及端口号），如果Client出于安全原因无法声明自己，则Client可以使用此信息来声明其主机名。
+- 对于StreamProtocol 和 MultiplexProtocol ，Server必须以字节0x4e响应，以确认对协议的支持以及EndpointIdentifier（包含客户端的主机名以及端口号），如果Client出于安全原因无法声明自己，则Client可以使用此信息来声明其主机名。然后，Client必须使用另一个EndpointIdentifier进行响应，该EndpointIdentifier包含Client用于接受连接的默认终结点。Server可以在MultiplexProtocol情况下使用它来标识客户端。
 
 ![image-20200105125056296](Java Protocols.assets/image-20200105125056296.png)
-
-然后，Client必须使用另一个EndpointIdentifier进行响应，该EndpointIdentifier包含Client用于接受连接的默认终结点。Server可以在MultiplexProtocol情况下使用它来标识客户端。
 
 ​	对于StreamProtocol，在此端点协商之后，消息将通过输出流发送，而无需任何其他数据包装。
 
@@ -246,10 +236,20 @@ DGCAck是针对服务器的分布式垃圾收集的确认，它指示客户端�
 > https://paper.seebug.org/1091/#java-rmi_3
 >
 > https://docs.oracle.com/javase/8/docs/technotes/guides/rmi/codebase.html
+>
+> https://blog.csdn.net/bigtree_3721/article/details/50614289
 
 
 
 **Codebase：**codebase是一个源或者地址，JVM可以从这个地址加载类
+
+
+
+**为什么需要Codebase：**
+
+当我们用一个对象作为远程方法调用的参数时，对象是以序列化流来传输到远端，然后在远端重新生成对象。这样就可能在两个JVM中交换对象了。但是序列化是这种传递对象的一部分。当你序列化对象时，你仅仅是把对象的成员数据转化成字节流，并不会传递该对象的实际代码。也就是说，传递的只是数据部分，而做为控制逻辑的程序代码部分却没有被传递。
+
+有的时候会出现这种情况，对象数据传递过去以后，找不到该对象的类定义，于是，对于本地没有的类文件的对象，RMI提供了一些机制使得接收序列化对象的一方去取回该对象的类代码。而到什么地方去取，这就需要发送方设置codebase了。
 
 
 
@@ -265,10 +265,10 @@ DGCAck是针对服务器的分布式垃圾收集的确认，它指示客户端�
 
 ![image-20200105005709449](Java Protocols.assets/image-20200105005709449.png)
 
-加入Codebase过程与前面介绍的基本一致
+设置了Codebase的RMI过程与前面介绍的基本一致
 
-1. 远程对象的codebase是由远程对象服务器设置的`java.rmi.server.codebase`属性所指定。Java RMI server在Java RMI 注册表上注册一个远程对象并为这个对象命名。codebase
-2. Java RMI客户端向Java RMI registry请求远程对象地stubs
+1. 远程对象的codebase是由远程对象服务器设置的`java.rmi.server.codebase`属性所指定。Java RMI server在Java RMI registry上注册一个远程对象并为这个对象进行命名。
+2. Java RMI client向Java RMI registry请求远程对象的stubs，stubs里包含了远程对象中所需要的信息。
 3. Java RMI registry返回请求的stub实例，客户端首先会从自己的CLASSPATH里寻找是否存在自己请求的class的定义，如果有，就从本地加载，如果没有，客户端会尝试从stub中的远程对象服务器中的codebase去获取。
 4. Java RMI客户端向codebase获取到了class的定义，
 5. stub中所需的class 定义将被下载到客户端。
@@ -276,12 +276,9 @@ DGCAck是针对服务器的分布式垃圾收集的确认，它指示客户端�
 
 
 
+​	动态类加载是简化部署的一种技术，为了解决下面的问题：
 
-
-​	动态类加载时简化部署的一种技术，为了解决下面的问题：
-
-> 1. 当一个序列化的对象通过网络发送时，它所需的类定义在另一边可能是不可用的。
-> 2. 自动包含类可以从哪里下载的URL序列化对象，允许专用类加载器(如URLClassLoader类)在它们需要反序列化一个对象时可以通过网络自动加载类。
+> 1. 当一个序列化的对象传送到另一端进行反序列化时，它所需的类定义在另一边可能是不存在。
 
 ​	如果当前JVM中没有某个类的定义，它可以从远程URL去下载该类，动态加载的class文件可以通过多种方式进行托管（比如http://、ftp://、file://）这可以动态的扩展远程应用的功能，RMI注册表上可以动态的加载绑定多个RMI应用。
 
@@ -291,18 +288,9 @@ DGCAck是针对服务器的分布式垃圾收集的确认，它指示客户端�
 
 ​	客户端与服务端两边的`java.rmi.server.codebase`URL都是互相传递的。无论是客户端还是服务端要远程加载类，都需要满足以下条件：
 
-1. 由于Java SecurityManager的限制，默认是不允许远程加载的，如果需要进行远程加载类，需要安装RMISecurityManager并且配置java.security.policy，这在后面的利用中可以看到。
-2. 属性 java.rmi.server.useCodebaseOnly 的值必需为false。但是从JDK 6u45、7u21开始，java.rmi.server.useCodebaseOnly 的默认值就是true。当该值为true时，将禁用自动加载远程类文件，仅从CLASSPATH和当前虚拟机的java.rmi.server.codebase 指定路径加载类文件。使用这个属性来防止虚拟机从其他Codebase地址上动态加载类，增加了RMI ClassLoader的安全性。
-
-
-
-
-
-https://security.tencent.com/index.php/blog/msg/131
-
-https://xz.aliyun.com/t/2650
-
-https://juejin.im/post/5baddeace51d450e704295b2
+> 1. 由于Java SecurityManager的限制，默认是不允许远程加载的，如果需要进行远程加载类，需要安装RMISecurityManager并且配置java.security.policy，这在后面的利用中可以看到。
+> 2. 属性 java.rmi.server.useCodebaseOnly 的值必需为false。但是从JDK 6u45、7u21开始，java.rmi.server.useCodebaseOnly 的默认值就是true。当该值为true时，将禁用自动加载远程类文件，仅从CLASSPATH和当前虚拟机的java.rmi.server.codebase 指定路径加载类文件。使用这个属性来防止虚拟机从其他Codebase地址上动态加载类，增加了RMI ClassLoader的安全性。
+>
 
 
 
@@ -310,8 +298,20 @@ https://juejin.im/post/5baddeace51d450e704295b2
 
 
 
-## 0x03 安全
 
-在远程方法调用过程中，参数需要先序列化，从 local JVM 发送到 remote JVM，然后在 remote JVM 上反序列化，执行完后，将结果序列化，发送回 local JVM，因此可能会存在反序列化漏洞
 
-此外，RMI 有一个特性，即当 class 在 receiver 的 JVM 中没有定义时，可以动态从本地 / 远程加载 object class ，在默认情况下 ( `JDK 7u21` 起)，只允许从本地加载，即 `java.rmi.server.useCodebaseOnly` 为 `true`，并且有 Security Manager 的存在，因此利用比较困难
+## 0x03 攻击点
+
+
+
+### 直接执行反序列化攻击
+
+在远程方法调用过程中，参数需要先序列化，从 local JVM 发送到 remote JVM，然后在 remote JVM 上进行反序列化（比如readObject），执行完后，将结果序列化，发送回 local JVM，因此可能会存在反序列化漏洞
+
+
+
+### 利用动态类加载的特性
+
+此外，利用RMI的动态类加载的特性，即当 class 在 receiver 的 JVM 中没有定义时，可以动态从本地 / 远程加载 object class ，在默认情况下 ( `JDK 7u21` 起)，只允许从本地加载，即 `java.rmi.server.useCodebaseOnly` 默认为 `true`，并且有 Security Manager 的存在，因此利用比较困难
+
+PoliCTF 2017 - Lamermi
